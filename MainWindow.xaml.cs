@@ -10,12 +10,15 @@ namespace GAZDIN_CALC_APP
     /// </summary>
     public partial class MainWindow : Window
     {
+        private double w_www;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            PlotBuilder.OnGraphDraw += ParseStrings;
         }
 
-        private List<Part> _parts = new List<Part>();
         //private Func<double, double> _calculationFunc;
 
 		private void Button_Click(object sender, RoutedEventArgs e)
@@ -74,22 +77,6 @@ namespace GAZDIN_CALC_APP
             PlotBuilder.Refresh();
 		}
 
-		private void CalcPart(Vector2 start, Vector2 end, float epsilon, bool isDowning)
-		{
-            if (isDowning)
-            {
-                Vector2 middle = new Vector2((end.X - start.X) / 2, start.Y - ((start.Y - end.Y) / 2));
-                _parts.Add(new Part(0, 0, 0, 0, 0, 0, middle, true));
-                if (start.Y - middle.Y > epsilon || middle.Y - end.Y > epsilon)
-                {
-                    CalcPart(start, middle, epsilon, true);
-                    CalcPart(middle, end, epsilon, true);
-                }
-                else
-                    return;
-            }
-		}
-
 		private void ParseStrings(out Vector2 start, out Vector2 end, out Vector2 crit)
 		{
             string line = startVec.Text;
@@ -112,8 +99,19 @@ namespace GAZDIN_CALC_APP
             numOfParts = float.Parse(this.numOfParts.Text);
         }
 
-		private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void ParseStrings(out double T, out double P, out double RO, out bool isBase)
+        {
+			T = double.Parse(this.T_0.Text);
+			P = double.Parse(this.P_0.Text);
+			RO = double.Parse(this.RO_0.Text);
+
+            isBase = (bool)IsBase.IsChecked;
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
 		{
+            PlotBuilder.Clear();
+            
             ParseStrings(out float k, out float c, out float T_0, out float P_0, out float RO_0, out float epsilon, out float numOfParts);
 
             float d_crit = 0;
@@ -151,11 +149,14 @@ namespace GAZDIN_CALC_APP
 			}
             else
             {
-                d_crit = float.Parse(critPoint.Text.Split(", ")[1]);
-                xLength = double.Parse(endVec.Text.Split(", ")[0]);
-                crit_x = double.Parse(critPoint.Text.Split(", ")[0]);
+                d_crit = float.Parse(critPoint.Text.Split(", ")[1]) / 100;
+                xLength = double.Parse(endVec.Text.Split(", ")[0]) / 100;
+                crit_x = double.Parse(critPoint.Text.Split(", ")[0]) / 100;
 
                 ParseStrings(out Vector2 start, out Vector2 end, out Vector2 crit);
+                start /= 100;
+                end /= 100;
+                crit /= 100;
 
                 double[] xss = { start.X, crit.X, end.X };
                 double[] ys = { start.Y, crit.Y, end.Y };
@@ -191,6 +192,8 @@ namespace GAZDIN_CALC_APP
                 w.Add(results["w"]);
                 xs.Add(x);
             }
+
+
 
             PlotBuilder.BuildResults(T, P, RO, M, w, xs);
 

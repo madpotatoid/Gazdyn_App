@@ -2,6 +2,7 @@
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace GAZDIN_CALC_APP
 {
@@ -10,6 +11,9 @@ namespace GAZDIN_CALC_APP
 	/// </summary>
 	public class PlotBuilder
 	{
+		public delegate void DataHandler(out double T, out double P, out double RO, out bool isBase);
+		public static event DataHandler OnGraphDraw;
+
 		private enum FuncType
 		{
 			T,
@@ -23,9 +27,14 @@ namespace GAZDIN_CALC_APP
 		{
 			Plot = new PlotModel() { Title = "test" };
 			ResultPlot = new PlotModel() { Title = "Результат расчетов" };
-			
+
+			CreateResultAxes();
+		}
+
+		private static void CreateResultAxes()
+		{
 			var linearAxis1 = new LinearAxis();
-			linearAxis1.Title = "Давление";
+			linearAxis1.Title = "Давление (10 ^ 6)";
 			linearAxis1.TitleColor = OxyColor.FromRgb(0, 0, 255);
 			linearAxis1.PositionTier = 1;
 			linearAxis1.AxisDistance = 25;
@@ -41,14 +50,14 @@ namespace GAZDIN_CALC_APP
 			var linearAxis3 = new LinearAxis();
 			linearAxis3.Title = "Скорость потока";
 			linearAxis3.TitleColor = OxyColor.FromRgb(0, 255, 0);
-			linearAxis3.PositionTier = 3;
+			linearAxis3.PositionTier = 4;
 			linearAxis3.AxisDistance = 25;
 			linearAxis3.Key = "w";
 			linearAxis3.AxislineColor = OxyColor.FromRgb(0, 255, 0);
 			var linearAxis4 = new LinearAxis();
 			linearAxis4.Title = "Плотность";
 			linearAxis4.TitleColor = OxyColor.FromRgb(100, 100, 100);
-			linearAxis4.PositionTier = 4;
+			linearAxis4.PositionTier = 3;
 			linearAxis4.AxisDistance = 25;
 			linearAxis4.Key = "RO";
 			linearAxis4.AxislineColor = OxyColor.FromRgb(100, 100, 100);
@@ -90,7 +99,16 @@ namespace GAZDIN_CALC_APP
 			M.RemoveAll(double.IsNaN);
 			w.RemoveAll(double.IsNaN);
 
-			for(int i = 0; i < T.Count; i++)
+			OnGraphDraw.Invoke(out double t, out double p, out double ro, out bool isBase);
+
+			if (isBase)
+			{
+				CalculateBase(T, t);
+				CalculateBase(P, p);
+				CalculateBase(RO, ro);
+			}
+
+			for (int i = 0; i < T.Count; i++)
 			{
 				if (i != T.Count - 1)
 				{
@@ -102,6 +120,14 @@ namespace GAZDIN_CALC_APP
 				}
 				else
 					break;
+			}
+		}
+
+		private static void CalculateBase(in List<double> part, double val)
+		{
+			for (int i = 0; i < part.Count; i++)
+			{
+				part[i] /= val;
 			}
 		}
 
@@ -175,6 +201,8 @@ namespace GAZDIN_CALC_APP
 		public static void Clear()
 		{
 			Plot.Series.Clear();
+			ResultPlot.Series.Clear();
+
 			Refresh();
 		}
 
